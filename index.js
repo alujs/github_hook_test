@@ -1,7 +1,7 @@
 const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
-const { processUrl, hasCurrentReview, updateReview, createReview } = require('./helpers');
+const { processUrl, hasCurrentReview, updateReview, createReview, processFilesFromPullRequest } = require('./helpers');
 
 
 app.get('/', function (req, res) {
@@ -11,18 +11,19 @@ app.get('/', function (req, res) {
 
 app.post('/', bodyParser.json(), async (req, res) => {
   console.log('HEY we got an action,', req.body.action);
-  if (req.body.action === 'opened') {
+  if (req.body.action === 'opened' || req.body.action === 'reopened') {
     try {
       const meta = processUrl(req.body);
 
       meta.errors = await processFilesFromPullRequest(meta);
   
-      if (await hasCurrentReview ) {
+      if (await hasCurrentReview(meta) ) {
         await updateReview(meta);
       } else {
         await createReview(meta);
       }
     } catch(e) {
+      console.log(e);
       return res.status(500).send(e);
     }
   }
